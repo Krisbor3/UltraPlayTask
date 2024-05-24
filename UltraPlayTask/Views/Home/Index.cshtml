@@ -1,0 +1,68 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@model IEnumerable<MatchViewModel>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Matches in the Next 24 Hours</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .match-list {
+            margin-top: 20px;
+        }
+        .match-item {
+            border-bottom: 1px solid #ccc;
+            padding: 10px 0;
+        }
+        .match-item:last-child {
+            border-bottom: none;
+        }
+        .match-name {
+            font-weight: bold;
+        }
+        .match-date {
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Matches in the Next 24 Hours</h1>
+            <a href="/Matches/Create" class="btn btn-primary">Create Match</a>
+        </div>
+        <div class="match-list">
+            @foreach (var match in Model)
+            {
+                <div class="match-item">
+                    <div class="match-name">@match.Name</div>
+                    <div class="match-date">@match.StartDate.ToString("f")</div>
+                </div>
+            }
+        </div>
+    </div>
+</body>
+</html>
+
