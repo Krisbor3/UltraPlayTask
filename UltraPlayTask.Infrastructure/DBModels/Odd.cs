@@ -1,5 +1,4 @@
-﻿
-namespace UltraPlayTask.Infrastructure.Models
+﻿namespace UltraPlayTask.Infrastructure.Models
 {
     public class Odd
     {

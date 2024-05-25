@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace UltraPlayTask.Models
+﻿namespace UltraPlayTask.Models
 {
     public class Event
     {

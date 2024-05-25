@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace UltraPlayTask.Models
+﻿namespace UltraPlayTask.Models
 {
     public class Sport
     {

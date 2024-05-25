@@ -26,21 +26,8 @@ namespace UltraPlayTask.Controllers
             return View(matches);
         }
 
-        //not used:
-        private List<MatchViewModel> GetMatchesStartingInNext24Hours()
-        {
-            // This is a placeholder. Replace it with actual data fetching logic.
-            return new List<MatchViewModel>
-            {
-            new MatchViewModel { Name = "Match 1", StartDate = DateTime.Now.AddHours(1) },
-            new MatchViewModel { Name = "Match 2", StartDate = DateTime.Now.AddHours(2) },
-            // Add more sample data as needed.
-            };
-        }
-
         public async Task<IActionResult> Privacy()
         {
-            await this._xmlFeedService.FetchAndProcessFeedAsync();
             return View();
         }
 

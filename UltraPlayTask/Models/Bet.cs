@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-namespace UltraPlayTask.Models
+﻿namespace UltraPlayTask.Models
 {
     public class Bet
     {
