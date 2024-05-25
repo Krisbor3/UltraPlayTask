@@ -1,135 +1,131 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Microsoft.EntityFrameworkCore;
-using UltraPlayTask.Infrastructure;
+﻿using System.Xml.Linq;
+using UltraPlayTask.Infrastructure.IRepositories;
 using UltraPlayTask.Infrastructure.Models;
 
 namespace UltraPlayTask.Services
 {
     public class XmlFeedService
     {
-        private readonly UltraPlayTaskDBContext _context;
+        private readonly IXmlFeedRepository _xmlFeedRepository;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<XmlFeedService> _logger;
+        private readonly IConfiguration _config;
 
-        public XmlFeedService(UltraPlayTaskDBContext context, IHttpClientFactory httpClientFactory)
+        public XmlFeedService(IXmlFeedRepository xmlFeedRepo, IHttpClientFactory httpClientFactory, ILogger<XmlFeedService> logger, IConfiguration config)
         {
-            _context = context;
+            _xmlFeedRepository = xmlFeedRepo;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
+            _config = config;
         }
 
         public async Task FetchAndProcessFeedAsync()
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetStringAsync("https://sports.ultraplay.net/sportsxml?clientKey=9C5E796D-4D54-42FD-A535-D7E77906541A&sportId=2357&days=7");
-            var xmlDoc = XDocument.Parse(response);
-
-            // Parse XML and update the database
-            // Example for parsing Sports
-            foreach (var sportElement in xmlDoc.Descendants("Sport"))
+            try
             {
-                var sportName = sportElement.Attribute("Name")?.Value;
-                var sport = await _context.Sports.FirstOrDefaultAsync(s => s.Name == sportName);
+                var client = _httpClientFactory.CreateClient();
+                var response = await client.GetStringAsync(_config["XmlUrl"]);
+                var xmlDoc = XDocument.Parse(response);
 
-                if (sport == null)
+                foreach (var sportElement in xmlDoc.Descendants("Sport"))
                 {
-                    sport = new Sport { Name = sportName };
-                    _context.Sports.Add(sport);
-                    await _context.SaveChangesAsync();
-                }
+                    var sportName = sportElement.Attribute("Name")?.Value;
+                    var sport = await _xmlFeedRepository.GetSportByName(sportName);
 
-                // Parse and process events
-                foreach (var eventElement in sportElement.Descendants("Event"))
-                {
-                    var eventName = eventElement.Attribute("Name")?.Value;
-                    var eventEntity = await _context.Events.FirstOrDefaultAsync(e => e.Name == eventName && e.SportId == sport.Id);
-
-                    if (eventEntity == null)
+                    if (sport == null)
                     {
-                        eventEntity = new Event { Name = eventName, SportId = sport.Id };
-                        _context.Events.Add(eventEntity);
-                        await _context.SaveChangesAsync();
+                        sport = new Sport { Name = sportName };
+                        await _xmlFeedRepository.AddSport(sport);
                     }
 
-                    // Parse and process matches
-                    foreach (var matchElement in eventElement.Descendants("Match"))
+                    foreach (var eventElement in sportElement.Descendants("Event"))
                     {
-                        var matchName = matchElement.Attribute("Name")?.Value;
-                        var startDate = DateTime.Parse(matchElement.Attribute("StartDate")?.Value);
-                        var matchType = matchElement.Attribute("MatchType")?.Value;
-                        var match = await _context.Matches.FirstOrDefaultAsync(m => m.Name == matchName && m.EventId == eventEntity.Id);
+                        var eventName = eventElement.Attribute("Name")?.Value;
+                        var eventEntity = await _xmlFeedRepository.GetEventByIdAndName(sport.Id, eventName);
 
-                        if (match == null)
+                        if (eventEntity == null)
                         {
-                            match = new Match
-                            {
-                                Name = matchName,
-                                StartDate = startDate,
-                                MatchType = matchType,
-                                EventId = eventEntity.Id
-                            };
-                            _context.Matches.Add(match);
-                            await _context.SaveChangesAsync();
-                        }
-                        else
-                        {
-                            match.StartDate = startDate;
-                            match.MatchType = matchType;
-                            _context.Matches.Update(match);
-                            await _context.SaveChangesAsync();
+                            eventEntity = new Event { Name = eventName, SportId = sport.Id };
+                            await _xmlFeedRepository.AddEvent(eventEntity);
                         }
 
-                        // Parse and process bets
-                        foreach (var betElement in matchElement.Descendants("Bet"))
+                        foreach (var matchElement in eventElement.Descendants("Match"))
                         {
-                            var betName = betElement.Attribute("Name")?.Value;
-                            var isLive = bool.Parse(betElement.Attribute("IsLive")?.Value);
-                            var bet = await _context.Bets.FirstOrDefaultAsync(b => b.Name == betName && b.MatchId == match.Id && b.IsLive == isLive);
+                            var matchName = matchElement.Attribute("Name")?.Value;
+                            var startDate = DateTime.Parse(matchElement.Attribute("StartDate")?.Value);
+                            var matchType = matchElement.Attribute("MatchType")?.Value;
+                            var match = await _xmlFeedRepository.GetMatchByIdAndName(eventEntity.Id, matchName);
 
-                            if (bet == null)
+                            if (match == null)
                             {
-                                bet = new Bet
+                                match = new Match
                                 {
-                                    Name = betName,
-                                    IsLive = isLive,
-                                    MatchId = match.Id
+                                    Name = matchName,
+                                    StartDate = startDate,
+                                    MatchType = matchType,
+                                    EventId = eventEntity.Id
                                 };
-                                _context.Bets.Add(bet);
-                                await _context.SaveChangesAsync();
+                                await _xmlFeedRepository.AddMatch(match);
+                            }
+                            else
+                            {
+                                match.StartDate = startDate;
+                                match.MatchType = matchType;
+                                await _xmlFeedRepository.UpdateMatch(match);
                             }
 
-                            // Parse and process odds
-                            foreach (var oddElement in betElement.Descendants("Odd"))
+                            foreach (var betElement in matchElement.Descendants("Bet"))
                             {
-                                var oddValue = decimal.Parse(oddElement.Attribute("Value")?.Value);
-                                var specialBetValue = oddElement.Attribute("SpecialBetValue") != null
-                                    ? (decimal?)decimal.Parse(oddElement.Attribute("SpecialBetValue")?.Value)
-                                    : null;
+                                var betName = betElement.Attribute("Name")?.Value;
+                                var isLive = bool.Parse(betElement.Attribute("IsLive")?.Value);
+                                var bet = await _xmlFeedRepository.GetBet(match.Id, betName, isLive);
 
-                                var odd = await _context.Odds.FirstOrDefaultAsync(o => o.BetId == bet.Id && o.Value == oddValue && o.SpecialBetValue == specialBetValue);
-
-                                if (odd == null)
+                                if (bet == null)
                                 {
-                                    odd = new Odd
+                                    bet = new Bet
                                     {
-                                        Value = oddValue,
-                                        SpecialBetValue = specialBetValue,
-                                        BetId = bet.Id
+                                        Name = betName,
+                                        IsLive = isLive,
+                                        MatchId = match.Id
                                     };
-                                    _context.Odds.Add(odd);
+                                    await _xmlFeedRepository.AddBet(bet);
                                 }
-                                else
+
+                                foreach (var oddElement in betElement.Descendants("Odd"))
                                 {
-                                    odd.Value = oddValue;
-                                    _context.Odds.Update(odd);
+                                    var oddValue = decimal.Parse(oddElement.Attribute("Value")?.Value);
+                                    var specialBetValue = oddElement.Attribute("SpecialBetValue") != null
+                                        ? (decimal?)decimal.Parse(oddElement.Attribute("SpecialBetValue")?.Value)
+                                        : null;
+
+                                    var odd = await _xmlFeedRepository.GetOdd(bet.Id, oddValue, specialBetValue);
+
+                                    if (odd == null)
+                                    {
+                                        odd = new Odd
+                                        {
+                                            Value = oddValue,
+                                            SpecialBetValue = specialBetValue,
+                                            BetId = bet.Id
+                                        };
+                                        await _xmlFeedRepository.AddOdd(odd);
+                                    }
+                                    else
+                                    {
+                                        odd.Value = oddValue;
+                                        await _xmlFeedRepository.UpdateOdd(odd);
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                _logger.LogInformation("Feed successfully processed.");
             }
-
-            await _context.SaveChangesAsync();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching and processing feed.");
+            }
         }
     }
 }

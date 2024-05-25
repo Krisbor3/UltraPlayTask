@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using UltraPlayTask.Infrastructure;
 using UltraPlayTask.Infrastructure.IRepositories;
 using UltraPlayTask.Infrastructure.Repositories;
@@ -8,9 +6,6 @@ using UltraPlayTask.Interfaces;
 using UltraPlayTask.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-//builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<UltraPlayTaskDBContext>(options =>
 {
@@ -22,9 +17,10 @@ builder.Services.AddHttpClient<XmlFeedService>(); // Registering with HttpClient
 builder.Services
     .AddScoped<XmlFeedService>()
     .AddScoped<IMatchService, MatchService>()
-    .AddScoped<IMatchRepository,MatchRepository>();
+    .AddScoped<IMatchRepository, MatchRepository>()
+    .AddScoped<IXmlFeedRepository, XmlFeedRepository>();
 //builder.Services.AddSingleton<UpdateNotificationService>();
-//builder.Services.AddHostedService<FetchFeedHostedService>();
+builder.Services.AddHostedService<FetchFeedHostedService>();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
