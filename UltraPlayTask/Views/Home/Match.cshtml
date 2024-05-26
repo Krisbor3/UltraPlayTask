@@ -1,0 +1,55 @@
+﻿@model UltraPlayTask.Models.SingleMatchViewModel
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matches</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .match-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .match-title {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+
+        .bet-title {
+            font-size: 1.2em;
+            margin-bottom: 4px;
+        }
+
+        .odd-value {
+            font-size: 1em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Matches in Next 24 Hours</h1>
+            <div class="match-card">
+                <div class="match-title">@Model.MatchName</div>
+                <div>Start Date: @Model.StartDate</div>
+                <div class="bets mt-3">
+                    @foreach (var bet in @Model.Bets)
+                    {
+                        <div class="bet-title">@bet.Name</div>
+                        <div class="odds">
+                            @foreach (var odd in bet.Odds)
+                            {
+                                <span class="odd-value">Odd: @odd.Value</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+    </div>
+</body>
+</html>

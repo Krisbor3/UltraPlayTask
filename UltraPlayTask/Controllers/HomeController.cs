@@ -2,33 +2,50 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using UltraPlayTask.Interfaces;
 using UltraPlayTask.Models;
-using UltraPlayTask.Services;
 
 namespace UltraPlayTask.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly XmlFeedService _xmlFeedService;
         private readonly IMatchService _matchService;
 
-        public HomeController(ILogger<HomeController> logger,XmlFeedService service, IMatchService matchService)
+        public HomeController(IMatchService matchService)
         {
-            _logger = logger;
-            _xmlFeedService = service;
             _matchService = matchService;
         }
 
         public async Task<IActionResult> Index()
         {
-            // Fetch the matches starting in the next 24 hours from your service or database.
             var matches = await _matchService.GetMatchesStartingInNext24Hours();
             return View(matches);
         }
 
-        public async Task<IActionResult> Privacy()
+        [HttpGet]
+        public async Task<IActionResult> Match(int id)
         {
-            return View();
+            var match = await _matchService.GetMatchById(id);
+
+
+            if (match == null)
+            {
+                return NotFound();
+            }
+
+            var result = new SingleMatchViewModel()
+            {
+                MatchName = match.Name,
+                StartDate = match.StartDate,
+                Bets = match.Bets.Select(x => new Bet
+                {
+                    Name = x.Name,
+                    Id = x.Id,
+                    IsLive = x.IsLive,
+                    MatchId = x.MatchId,
+                    Odds = x.Odds.Select(o => new Odd { Id = o.Id, SpecialBetValue = o.SpecialBetValue, BetId = o.BetId, Value = o.Value }).ToList()
+                }).ToList()
+            };
+
+            return View(result);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
