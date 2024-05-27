@@ -18,7 +18,9 @@ builder.Services
     .AddScoped<XmlFeedService>()
     .AddScoped<IMatchService, MatchService>()
     .AddScoped<IMatchRepository, MatchRepository>()
-    .AddScoped<IXmlFeedRepository, XmlFeedRepository>();
+    .AddScoped<IXmlFeedRepository, XmlFeedRepository>()
+    .AddScoped<IUpdateMessageRepository, UpdateMessageRepository>()
+    .AddScoped<IUpdateMessageService,UpdateMessageService>();
 //builder.Services.AddSingleton<UpdateNotificationService>();
 builder.Services.AddHostedService<FetchFeedHostedService>();
 builder.Services.AddControllersWithViews();

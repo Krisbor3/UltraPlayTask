@@ -13,6 +13,7 @@ namespace UltraPlayTask.Infrastructure
         public DbSet<Match> Matches { get; set; }
         public DbSet<Bet> Bets { get; set; }
         public DbSet<Odd> Odds { get; set; }
+        public DbSet<UpdateMessage> UpdateMessages { get; set; }
 
     }
 }

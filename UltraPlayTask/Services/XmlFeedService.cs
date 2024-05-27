@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
 using UltraPlayTask.Infrastructure.IRepositories;
 using UltraPlayTask.Infrastructure.Models;
+using UltraPlayTask.Interfaces;
 
 namespace UltraPlayTask.Services
 {
@@ -10,13 +11,15 @@ namespace UltraPlayTask.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<XmlFeedService> _logger;
         private readonly IConfiguration _config;
+        private readonly IUpdateMessageService _updateMessageService;
 
-        public XmlFeedService(IXmlFeedRepository xmlFeedRepo, IHttpClientFactory httpClientFactory, ILogger<XmlFeedService> logger, IConfiguration config)
+        public XmlFeedService(IXmlFeedRepository xmlFeedRepo, IHttpClientFactory httpClientFactory, ILogger<XmlFeedService> logger, IConfiguration config, IUpdateMessageService updateMessageService)
         {
             _xmlFeedRepository = xmlFeedRepo;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             _config = config;
+            _updateMessageService = updateMessageService;
         }
 
         public async Task FetchAndProcessFeedAsync()
@@ -72,6 +75,7 @@ namespace UltraPlayTask.Services
                                 match.StartDate = startDate;
                                 match.MatchType = matchType;
                                 await _xmlFeedRepository.UpdateMatch(match);
+                                await _updateMessageService.AddUpdateMessageAsync("Match", match.Id, "Update");
                             }
 
                             foreach (var betElement in matchElement.Descendants("Bet"))
